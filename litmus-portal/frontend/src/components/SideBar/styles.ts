@@ -34,7 +34,7 @@ export const useStyles = makeStyles((theme: Theme) => ({
 		left: 81,
 		top: 24,
 		marginLeft: theme.spacing(1.75),
-		color: "#000000"	
+		color: "#000000"
 	
 	},
 	drawerListItem: {

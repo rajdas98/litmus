@@ -53,7 +53,7 @@ export function SideBar() {
 				alt="litmus logo"
 				className={classes.logo}
 			/>
-		<Typography className={classes.litmusHome}  variant="body1"> 
+		<Typography className={classes.litmusHome}  variant="body1">
 			Litmus
 		</Typography>
 		</div>
