@@ -143,5 +143,5 @@ jobs:
       - name: Add a merge label when all jobs are passed
         uses: actions-ecosystem/action-add-labels@v1
         with:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_SECRET }}
           labels: merge
