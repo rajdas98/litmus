@@ -144,10 +144,7 @@ jobs:
         uses: actions-ecosystem/action-add-labels@v1
         with:
           GITHUB_TOKEN: ${{ secrets.GH_SECRET }}
-          labels: merge
-  merge-please:
-    runs-on: ubuntu-latest
-    steps:
+          labels: automerge
       - name: automerge
         uses: "pascalgn/automerge-action@f81beb99aef41bb55ad072857d43073fba833a98"
         env:
