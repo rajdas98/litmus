@@ -75,18 +75,36 @@ func main() {
 	}
 
 	//log.Print(deploymentConfigList)
-	var etp v1alpha1.EventTrackerPolicy
-	data, err := json.Marshal(deploymentConfigList.Items[0].Object)
+	var etpl v1alpha1.EventTrackerPolicyList
+	data, err := json.Marshal(deploymentConfigList.Items)
 	if err != nil {
 		log.Print(err)
 	}
 
-	err = json.Unmarshal(data, &etp)
+	err = json.Unmarshal(data, &etpl)
 	if err != nil {
 		log.Print(err)
 	}
-	//
-	log.Print(etp,)
+
+	for _, ep := range etpl.Items {
+		eventTrackerPolicy, err := clientSet.Resource(deploymentRes).Namespace("default").Get( ep.Name,metav1.GetOptions{})
+		if err != nil {
+			log.Print(err)
+		}
+
+		var etp v1alpha1.EventTrackerPolicy
+		data, err := json.Marshal(eventTrackerPolicy.Object)
+		if err != nil {
+			log.Print(err)
+		}
+
+		err = json.Unmarshal(data, &etp)
+		if err != nil {
+			log.Print(err)
+		}
+
+		log.Print(e)
+	}
 	////_ = clientgoscheme.AddToScheme(scheme)
 	//
 	//_ = eventtrackerv1alpha1.AddToScheme(scheme)
