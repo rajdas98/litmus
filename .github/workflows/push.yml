@@ -4,6 +4,7 @@ on:
     branches:
       - master
       - v*
+      - env-images
     tags:
       - '*'
 jobs:
@@ -48,11 +49,11 @@ jobs:
           NEW_IMG_TAG=`echo $img_tag | sed "s/\//-/g"`
           echo $NEW_IMG_TAG
           echo export IMG_TAG=$NEW_IMG_TAG >> env-vars
-          echo export GRAPHQL_SERVER_IMAGE="litmusportal-server" >> env-vars
-          echo export AUTHENTICATION_SERVER_IMAGE="litmusportal-auth-server" >> env-vars
-          echo export FRONTEND_IMAGE="litmusportal-frontend" >> env-vars
-          echo export SUBSCRIBER_IMAGE="litmusportal-subscriber" >> env-vars
-          echo export EVENT_TRACKER="litmusportal-event-tracker" >> env-vars
+          echo export GRAPHQL_SERVER_IMAGE=${{ secrets.GRAPHQL_SERVER_IMAGE }} >> env-vars
+          echo export AUTHENTICATION_SERVER_IMAGE=${{ secrets.AUTHENTICATION_SERVER_IMAGE }} >> env-vars
+          echo export FRONTEND_IMAGE=${{ secrets.FRONTEND_IMAGE }} >> env-vars
+          echo export SUBSCRIBER_IMAGE=${{ secrets.SUBSCRIBER_IMAGE }} >> env-vars
+          echo export EVENT_TRACKER_IMAGE=${{ secrets.EVENT_TRACKER_IMAGE }} >> env-vars
       - name: Uploading envs
         uses: actions/upload-artifact@v2
         with:
@@ -178,7 +179,7 @@ jobs:
         run: |
           source env-vars
           cd litmus-portal/cluster-agents/event-tracker
-          docker build . -f build/Dockerfile -t ${{ secrets.REPONAME }}/${EVENT_TRACKER}:${IMG_TAG}
+          docker build . -f build/Dockerfile -t ${{ secrets.REPONAME }}/${EVENT_TRACKER_IMAGE}:${IMG_TAG}
       - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
@@ -192,7 +193,7 @@ jobs:
           if [ $branch == "master" ] || [ ${array[1]} == "tags" ] || [[ $branch =~ ^v[0-9]*.[0-9]*.x$ ]]
           then
             source env-vars
-            docker push ${{ secrets.REPONAME }}/${EVENT_TRACKER}:${IMG_TAG}
+            docker push ${{ secrets.REPONAME }}/${EVENT_TRACKER_IMAGE}:${IMG_TAG}
           fi
 
   docker-build-and-push-frontend:
