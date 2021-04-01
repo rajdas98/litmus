@@ -6,9 +6,12 @@ import (
 	"github.com/litmuschaos/litmus/litmus-portal/cluster-agents/subscriber/pkg/k8s"
 	"github.com/litmuschaos/litmus/litmus-portal/cluster-agents/subscriber/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"strings"
+	v1 "k8s.io/api/apps/v1"
 )
 
 //GetKubernetesObjects is used to get the Kubernetes Object details according to the request type
@@ -39,7 +42,7 @@ func GetKubernetesObjects(request types.KubeObjRequest) ([]*types.KubeObject, er
 
 	if len(namespace.Items) > 0 {
 		for _, namespace := range namespace.Items {
-			podList, err := GetObjectDataByNamespace(namespace.GetName(), dynamicClient, resourceType)
+			podList, err := getObjectDataByNamespace(namespace.GetName(), dynamicClient, resourceType)
 			if err != nil {
 				return nil, err
 			}
@@ -62,23 +65,90 @@ func GetKubernetesObjects(request types.KubeObjRequest) ([]*types.KubeObject, er
 }
 
 //GetObjectDataByNamespace uses dynamic client to fetch Kubernetes Objects data.
-func GetObjectDataByNamespace(namespace string, dynamicClient dynamic.Interface, resourceType schema.GroupVersionResource) ([]types.ObjectData, error) {
+func getObjectDataByNamespace(namespace string, dynamicClient dynamic.Interface, resourceType schema.GroupVersionResource) ([]types.ObjectData, error) {
 	list, err := dynamicClient.Resource(resourceType).Namespace(namespace).List(metav1.ListOptions{})
 	var kubeObjects []types.ObjectData
 	if err != nil {
 		return kubeObjects, nil
 	}
-	for _, list := range list.Items {
-		listInfo := types.ObjectData{
-			Name:                    list.GetName(),
-			UID:                     list.GetUID(),
-			Namespace:               list.GetNamespace(),
-			APIVersion:              list.GetAPIVersion(),
-			CreationTimestamp:       list.GetCreationTimestamp(),
-			TerminationGracePeriods: list.GetDeletionGracePeriodSeconds(),
-			Labels:                  list.GetLabels(),
-		}
-		kubeObjects = append(kubeObjects, listInfo)
+	var newXyz xyz
+	newXyz.ResourceNamespace = namespace
+
+	if err != nil {
+		return nil, err
 	}
+
+	var tmpObject []unstructured.Unstructured
+	for _, list := range list.Items {
+		//obj, err:= k8s.ApplyRequest("get", &list)
+		obj, err := dynamicClient.Resource(resourceType).Get(list.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		tmpObject = append(tmpObject, *obj)
+	}
+
+	newXyz.Resources = append(newXyz.Resources, resource{
+		ResourceType: resourceType.Resource,
+		Objects: tmpObject,
+	})
+
+	// graphql-server
+	// 1. make struct of the response from the subscriber
+	// 2. Unmarshal
+	// 3. Follow the
+	for _, xyz := range newXyz.Resources{
+		for _, obj := range xyz.Objects{
+
+			mar, err := json.Marshal(obj)
+			if err != nil {
+
+			}
+
+			var in interface{}
+			json.Unmarshal(mar, &in)
+
+			if strings.ToLower(xyz.ResourceType) == "deployment" {
+				newDep := in.(v1.StatefulSet)
+
+			}
+		}
+	}
+
+	//for _, list := range list.Items {
+	//	listInfo := types.ObjectData{
+	//		Name:                    list.GetName(),
+	//		UID:                     list.GetUID(),
+	//		Namespace:               list.GetNamespace(),
+	//		APIVersion:              list.GetAPIVersion(),
+	//		CreationTimestamp:       list.GetCreationTimestamp(),
+	//		TerminationGracePeriods: list.GetDeletionGracePeriodSeconds(),
+	//		Labels:                  list.GetLabels(),
+	//	}
+	//	kubeObjects = append(kubeObjects, listInfo)
+	//}
 	return kubeObjects, nil
 }
+
+// TODO- Resouce
+
+type xyz struct {
+	ResourceNamespace string
+	Resources []resource
+}
+
+
+type resource struct {
+	ResourceType string
+	Objects []unstructured.Unstructured
+}
+
+
+
+
+
+/*
+	one time request
+ 		resourcetype
+ */

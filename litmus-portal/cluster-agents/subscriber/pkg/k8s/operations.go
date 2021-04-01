@@ -3,13 +3,14 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"os"
 
 	yaml_converter "github.com/ghodss/yaml"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
@@ -77,7 +78,7 @@ func ClusterRegister(clusterData map[string]string) (bool, error) {
 	return true, nil
 }
 
-func applyRequest(requestType string, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
+func ApplyRequest(requestType string, obj *unstructured.Unstructured) (*unstructured.Unstructured, error) {
 	if requestType == "create" {
 		response, err := dr.Create(obj, metav1.CreateOptions{})
 		if errors.IsAlreadyExists(err) {
@@ -155,8 +156,8 @@ func ClusterOperations(manifest string, requestType string, namespace string) (*
 		return nil, err
 	}
 
-	// Getting dynamic and discovery client
-	discoveryClient, dynamicClient, err := GetDynamicAndDiscoveryClient()
+	//Getting discovery client
+	discoveryClient, err := GetDiscoveryClient()
 	if err != nil {
 		return nil, err
 	}
@@ -177,14 +178,110 @@ func ClusterOperations(manifest string, requestType string, namespace string) (*
 		return nil, err
 	}
 
-	// Obtain REST interface for the GVR
+	var newNamespace = ""
+	//// Obtain REST interface for the GVR
 	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
 		// namespaced resources should specify the namespace
-		dr = dynamicClient.Resource(mapping.Resource).Namespace(namespace)
+		newNamespace = namespace
+		//dr = dynamicClient.Resource(mapping.Resource).Namespace(namespace)
 	} else {
 		// for cluster-wide resources
-		dr = dynamicClient.Resource(mapping.Resource)
+		newNamespace = ""
+		//dr = dynamicClient.Resource(mapping.Resource)
+
 	}
 
-	return applyRequest(requestType, obj)
+	schema := schema.GroupVersionResource{
+		Group:    mapping.Resource.Group,
+		Version:  mapping.Resource.Version,
+		Resource: mapping.Resource.Resource,
+	}
+
+	tmpApply(schema, requestType, namespace, obj)
+
+	return ApplyRequest(requestType, obj)
+}
+
+func tmpApply(schema schema.GroupVersionResource, requestType string, namespace string, obj *unstructured.Unstructured) (*unstructured.Unstructured, error){
+
+	//Getting discovery client
+	dynamicClient, err := GetDynamiClient()
+	if err != nil {
+		return nil, err
+	}
+
+	var dr dynamic.NamespaceableResourceInterface
+	if namespace == "" {
+		dr = dynamicClient.Resource(schema)
+	} else {
+		dr = dynamicClient.Resource(schema).Namespace(namespace)
+	}
+
+	if requestType == "create" {
+		response, err := dr.Create(obj, metav1.CreateOptions{})
+		if errors.IsAlreadyExists(err) {
+			// This doesnt ever happen even if it does already exist
+			log.Printf("Already exists")
+			return nil, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		log.Println("Resource successfully created")
+		return response, nil
+	} else if requestType == "update" {
+		getObj, err := dr.Get(obj.GetName(), metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			// This doesnt ever happen even if it is already deleted or not found
+			log.Printf("%v not found", obj.GetName())
+			return nil, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		obj.SetResourceVersion(getObj.GetResourceVersion())
+
+		response, err := dr.Update(obj, metav1.UpdateOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		log.Println("Resource successfully updated")
+		return response, nil
+	} else if requestType == "delete" {
+		err := dr.Delete(obj.GetName(), &metav1.DeleteOptions{})
+		if errors.IsNotFound(err) {
+			// This doesnt ever happen even if it is already deleted or not found
+			log.Printf("%v not found", obj.GetName())
+			return nil, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		log.Println("Resource successfully deleted")
+		return &unstructured.Unstructured{}, nil
+	} else if requestType == "get" {
+		response, err := dr.Get(obj.GetName(), metav1.GetOptions{})
+		if errors.IsNotFound(err) {
+			// This doesnt ever happen even if it is already deleted or not found
+			log.Printf("%v not found", obj.GetName())
+			return nil, nil
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		log.Println("Resource successfully retrieved")
+		return response, nil
+	}
+
+	return nil, fmt.Errorf("err: %v\n", "Invalid Request")
+
 }

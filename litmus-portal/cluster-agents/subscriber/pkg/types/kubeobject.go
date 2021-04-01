@@ -11,7 +11,7 @@ type KubeObject struct {
 	Data      []ObjectData `json:"data"`
 }
 
-type ObjectData struct {
+type ObjectData struct {  // Deployment
 	Name                    string            `json:"name"`
 	UID                     types.UID         `json:"uid"`
 	Namespace               string            `json:"namespace"`

@@ -29,24 +29,33 @@ func GetGenericK8sClient() (*kubernetes.Clientset, error) {
 }
 
 //This function returns dynamic client and discovery client
-func GetDynamicAndDiscoveryClient() (discovery.DiscoveryInterface, dynamic.Interface, error) {
+func GetDynamiClient() (dynamic.Interface, error) {
 	// returns a config object which uses the service account kubernetes gives to pods
 	config, err := GetKubeConfig()
 	if err != nil {
-		return nil, nil, err
-	}
-
-	// NewDiscoveryClientForConfig creates a new DiscoveryClient for the given config
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
-	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// NewForConfig creates a new dynamic client or returns an error.
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return discoveryClient, dynamicClient, nil
+	return dynamicClient, nil
+}
+
+func GetDiscoveryClient() (discovery.DiscoveryInterface, error){
+	config, err := GetKubeConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// NewDiscoveryClientForConfig creates a new DiscoveryClient for the given config
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return discoveryClient, nil
 }
