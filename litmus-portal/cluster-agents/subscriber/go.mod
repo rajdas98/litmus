@@ -5,16 +5,21 @@ go 1.14
 require (
 	github.com/argoproj/argo v2.5.2+incompatible
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
-	github.com/gorilla/websocket v1.4.0
+	github.com/google/uuid v1.2.0 // indirect
+	github.com/gorilla/websocket v1.4.1
+	github.com/hasura/go-graphql-client v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.10 // indirect
+	github.com/klauspost/compress v1.12.2 // indirect
 	github.com/litmuschaos/chaos-operator v0.0.0-20210415155750-e4081aec0e41
 	github.com/sirupsen/logrus v1.6.0
+	golang.org/x/net v0.0.0-20210502030024-e5908800b52b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v12.0.0+incompatible
 	k8s.io/utils v0.0.0-20200414100711-2df71ebbae66 // indirect
+	nhooyr.io/websocket v1.8.7 // indirect
 )
 
 // Pinned to kubernetes-1.16.2

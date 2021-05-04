@@ -2,7 +2,7 @@ package gql
 
 import (
 	"encoding/json"
-
+	"github.com/hasura/go-graphql-client"
 	"github.com/litmuschaos/litmus/litmus-portal/cluster-agents/subscriber/pkg/k8s"
 
 	"github.com/gorilla/websocket"
@@ -15,7 +15,55 @@ import (
 	"time"
 )
 
+
 func ClusterConnect(clusterData map[string]string) {
+
+	var subscription struct {
+		ClusterConnect struct {
+			ProjectID   graphql.String `graphql:"project_id"`
+			Action struct{
+				k8sManifest graphql.String `graphql:"k8s_manifest"`
+				ExternalData graphql.String `graphql:"external_data"`
+				Namespace graphql.String `graphql:"namespace"`
+				RequestType graphql.String `graphql:"request_type"`
+			}
+		}  `graphql:"clusterConnect(cluster_id: $cluster_id, access_key: $access_key)"`
+	}
+
+	variables := map[string]interface{}{
+		"cluster_id":   clusterData["CLUSTER_ID"],
+		"access_key": clusterData["ACCESS_KEY"],
+	}
+
+	client := graphql.NewSubscriptionClient("wss://example.com/graphql")
+	defer client.Close()
+
+	// Subscribe subscriptions
+	// ...
+	// finally run the client
+
+	_, err := client.Subscribe(&subscription, variables, func(dataValue *json.RawMessage, errValue error) error {
+		if errValue != nil {
+			// handle error
+			// if returns error, it will failback to `onError` event
+			return nil
+		}
+		log.Println(dataValue)
+
+		return nil
+	})
+
+	if err != nil {
+		// Handle error.
+	}
+
+
+	client.Run()
+
+
+
+
+
 	query := `{"query":"subscription {\n    clusterConnect(clusterInfo: {cluster_id: \"` + clusterData["CLUSTER_ID"] + `\", access_key: \"` + clusterData["ACCESS_KEY"] + `\"}) {\n   \t project_id,\n     action{\n      k8s_manifest,\n      external_data,\n      request_type\n     namespace\n     }\n  }\n}\n"}`
 	serverURL, err := url.Parse(clusterData["SERVER_ADDR"])
 	scheme := "ws"
