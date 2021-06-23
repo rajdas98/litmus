@@ -39,6 +39,7 @@ func main() {
 	if port == "" {
 		port = defaultPort
 	}
+	
 	// Initialize the mongo client
 	mongodb.Client = mongodb.Client.Initialize()
 
